@@ -3,6 +3,7 @@
 		<label for="scope-path" class="scope-label">Folder scope</label>
 		<input id="scope-path" class="scope-input" type="text" v-model="scopePath" placeholder="e.g. Photos/2025" />
 		<button class="scope-apply" v-on:click="applyScope">Apply</button>
+		<button class="scope-clear" v-on:click="clearScope" v-if="scopePath">Clear</button>
 	</div>
 	<div class="element-container element-container-1 animated active">
 		<div class="element-preview"></div>

@@ -83,20 +83,22 @@ class ApiController extends Controller {
 	 */
 	private function collectFiles(Folder $folder, int $limit): array {
 		$results = [];
-		$stack = [$folder];
+		$queue = [$folder];
 		$seenIds = [];
 
-		while ($stack !== [] && count($results) < $limit) {
+		while ($queue !== [] && count($results) < $limit) {
 			/** @var Folder $current */
-			$current = array_pop($stack);
+			$current = array_shift($queue);
+			$entries = $current->getDirectoryListing();
+			shuffle($entries);
 
-			foreach ($current->getDirectoryListing() as $node) {
+			foreach ($entries as $node) {
 				if (count($results) >= $limit) {
 					break 2;
 				}
 
 				if ($node instanceof Folder) {
-					$stack[] = $node;
+					$queue[] = $node;
 					continue;
 				}
 

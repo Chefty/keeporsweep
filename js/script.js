@@ -276,6 +276,11 @@ var KeepOrSweep = KeepOrSweep || {};
 				manager.setScopePath(this.scopePath);
 				window.location.reload();
 			},
+			clearScope: function() {
+				this.scopePath = '';
+				manager.setScopePath('');
+				window.location.reload();
+			},
 			next: function() {
 				var file = manager.nextElement();
 				if(file) {

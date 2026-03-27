@@ -5,6 +5,7 @@ var KeepOrSweep = KeepOrSweep || {};
 
 	var Manager = function() {
 		this.filesClient = OC.Files.getClient();
+		this._previewSize = this._calculatePreviewSize();
 	};
 
 	Manager.prototype = {
@@ -14,7 +15,12 @@ var KeepOrSweep = KeepOrSweep || {};
 		_containerCurrent: 1,
 		_containerAfter: 2,
 		_containerActive: '.active .element-preview',
-		_previewSize: 500,
+		_previewSize: 256,
+
+		_calculatePreviewSize: function() {
+			var shortestViewportSide = Math.min(window.innerWidth || 1024, window.innerHeight || 768);
+			return Math.max(160, Math.min(320, Math.round(shortestViewportSide * 0.35)));
+		},
 
 		load: function() {
 			return this._loadList();
@@ -24,7 +30,7 @@ var KeepOrSweep = KeepOrSweep || {};
 
 			var baseUrl = OC.generateUrl('/apps/keeporsweep');
 			return (
-				$.getJSON(baseUrl + '/files')
+				$.getJSON(baseUrl + '/files?limit=120')
 				.then(function(result) {
 					var files = Array.isArray(result) ? result : (result.files || []);
 					self._list = _.shuffle(files);
@@ -57,8 +63,7 @@ var KeepOrSweep = KeepOrSweep || {};
 			// Try to get the preview if it is an image or a text file
 			if(self._list[index].mimetype == 'image/jpeg' ||
 				self._list[index].mimetype == 'image/png' ||
-				self._list[index].mimetype == 'image/gif' ||
-				self._list[index].mimetype == 'text/plain'){
+				self._list[index].mimetype == 'image/gif'){
 				var previewImg = new Image();
 				const previewUrl = OC.generateUrl('/core/preview.png?') + $.param(params);
 				previewImg.onload = function() {

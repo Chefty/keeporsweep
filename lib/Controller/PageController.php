@@ -1,18 +1,17 @@
 <?php
+
+declare(strict_types=1);
+
 namespace OCA\KeepOrSweep\Controller;
 
-use OCP\IRequest;
-use OCP\AppFramework\Http\TemplateResponse;
-use OCP\AppFramework\Http\DataResponse;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\ContentSecurityPolicy;
+use OCP\AppFramework\Http\TemplateResponse;
+use OCP\IRequest;
 
 class PageController extends Controller {
-	private $userId;
-
-	public function __construct($AppName, IRequest $request, $UserId){
-		parent::__construct($AppName, $request);
-		$this->userId = $UserId;
+	public function __construct(string $appName, IRequest $request) {
+		parent::__construct($appName, $request);
 	}
 
 	/**
@@ -25,9 +24,10 @@ class PageController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 */
-	public function index() {
-		$response = new TemplateResponse('keeporsweep', 'index');  // templates/index.php
+	public function index(): TemplateResponse {
+		$response = new TemplateResponse('keeporsweep', 'index');
 		$csp = new ContentSecurityPolicy();
+		// Needed for legacy runtime Vue template compilation in this app.
 		$csp->allowEvalScript(true);
 		$response->setContentSecurityPolicy($csp);
 

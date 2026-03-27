@@ -26,7 +26,12 @@ var KeepOrSweep = KeepOrSweep || {};
 			return (
 				$.getJSON(baseUrl + '/files')
 				.then(function(result) {
-					self._list = _.shuffle(result);
+					var files = Array.isArray(result) ? result : (result.files || []);
+					self._list = _.shuffle(files);
+				})
+				.catch(function() {
+					self._list = [];
+					OC.Notification.showTemporary(t('keeporsweep', 'Could not load your files.'));
 				})
 			);
 		},
@@ -56,7 +61,9 @@ var KeepOrSweep = KeepOrSweep || {};
 				self._list[index].mimetype == 'text/plain'){
 				var previewImg = new Image();
 				const previewUrl = OC.generateUrl('/core/preview.png?') + $.param(params);
-				previewImg.onload = self._onPreviewLoad(previewUrl);
+				previewImg.onload = function() {
+					self._onPreviewLoad(previewUrl);
+				};
 				previewImg.src = previewUrl;
 			}
 		},
@@ -81,7 +88,10 @@ var KeepOrSweep = KeepOrSweep || {};
 			}
 
 			this.moveContainer('Left');
-			this.filesClient.remove(path);
+			this.filesClient.remove(path)
+				.catch(function() {
+					OC.Notification.showTemporary(t('keeporsweep', 'Could not delete file.'));
+				});
 		},
 
 		moveContainer: function(direction) {

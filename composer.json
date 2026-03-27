@@ -1,8 +1,8 @@
 {
-    "name": "Keep or Sweep",
+    "name": "keeporsweep/keeporsweep",
     "description": "Randomly declutter your data",
     "type": "project",
-    "license": "AGPL",
+    "license": "AGPL-3.0-or-later",
     "authors": [
         {
             "name": "Martin Stadler",
@@ -23,8 +23,13 @@
             "role": "Developer"
         }
     ],
-    "require": {},
+    "require": {
+        "php": ">=8.0"
+    },
     "require-dev": {
-        "phpunit/phpunit": "^5.4"
+        "phpunit/phpunit": "^9.6"
+    },
+    "config": {
+        "sort-packages": true
     }
 }

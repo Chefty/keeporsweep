@@ -30,3 +30,20 @@ git clone https://github.com/keeporsweep/keeporsweep.git
 ```
 2. Enable it from the apps management inside Nextcloud
 3. Get hacking 🎉
+
+
+## Maintenance strategy for future Nextcloud versions
+
+No app can be guaranteed to work with all unknown future Nextcloud versions without any maintenance. But this repository can stay **low-maintenance** by combining stable API usage and automation:
+
+1. **Use only public `OCP\\*` APIs** in app code (avoid internal `OC\\*` classes).
+2. Keep compatibility claims in `appinfo/info.xml` aligned with tested ranges.
+3. Run CI on every PR and weekly (`.github/workflows/ci.yml`) to catch regressions early.
+4. Use a conservative release policy: bump supported Nextcloud max-version only after CI verification.
+
+### Practical release checklist
+
+- Run PHP lint + tests.
+- Verify app metadata (`composer validate`, `appinfo/info.xml` values).
+- Check for internal API usage regressions (`OC\\` namespace imports).
+- Test app manually on at least one currently supported Nextcloud release before tagging.

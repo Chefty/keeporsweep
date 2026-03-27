@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [ "main", "master" ]
+  schedule:
+    - cron: "0 5 * * 1"
+
+jobs:
+  php-lint:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ["8.1", "8.2", "8.3"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          tools: composer:v2
+
+      - name: Validate composer metadata
+        run: composer validate --strict
+
+      - name: Lint PHP files
+        run: |
+          find lib tests appinfo -type f -name "*.php" -print0 | xargs -0 -n1 php -l
+
+  compatibility-guardrails:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ensure no internal Nextcloud OC\* APIs are used in app code
+        run: |
+          if grep -R --line-number --include='*.php' 'use OC\\' lib appinfo; then
+            echo "Internal OC\\ namespace usage found; use public OCP APIs instead."
+            exit 1
+          fi
+
+      - name: Ensure app id consistency
+        run: |
+          grep -q '<id>keeporsweep</id>' appinfo/info.xml
+          grep -q "APP_ID = 'keeporsweep'" lib/AppInfo/Application.php

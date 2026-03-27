@@ -9,38 +9,23 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataResponse;
 use OCP\Files\File;
 use OCP\Files\Folder;
-use OCP\Files\IRootFolder;
-use OCP\ILogger;
 use OCP\IRequest;
-use OCP\IUserSession;
 
 class ApiController extends Controller {
 	private const DEFAULT_LIST_LIMIT = 200;
 	private const MAX_LIST_LIMIT = 1000;
 	private const MAX_PATH_LENGTH = 100;
 
-	private IRootFolder $rootFolder;
-	private IUserSession $userSession;
-	private ILogger $logger;
-
-	public function __construct(
-		string $appName,
-		IRequest $request,
-		IRootFolder $rootFolder,
-		IUserSession $userSession,
-		ILogger $logger
-	) {
+	public function __construct(string $appName, IRequest $request) {
 		parent::__construct($appName, $request);
-		$this->rootFolder = $rootFolder;
-		$this->userSession = $userSession;
-		$this->logger = $logger;
 	}
 
 	/**
 	 * @NoAdminRequired
 	 */
 	public function files(): DataResponse {
-		$user = $this->userSession->getUser();
+		$userSession = \OC::$server->getUserSession();
+		$user = $userSession->getUser();
 
 		if ($user === null) {
 			return new DataResponse([
@@ -52,7 +37,8 @@ class ApiController extends Controller {
 		$limit = max(1, min($rawLimit, self::MAX_LIST_LIMIT));
 
 		try {
-			$userFolder = $this->rootFolder->getUserFolder($user->getUID());
+			$rootFolder = \OC::$server->getRootFolder();
+			$userFolder = $rootFolder->getUserFolder($user->getUID());
 			$files = $this->collectFiles($userFolder, $limit);
 			$userPath = rtrim($userFolder->getPath(), '/');
 
@@ -76,11 +62,6 @@ class ApiController extends Controller {
 				],
 			]);
 		} catch (\Throwable $exception) {
-			$this->logger->error('Failed to list files for Keep or Sweep', [
-				'app' => 'keeporsweep',
-				'exception' => $exception,
-			]);
-
 			return new DataResponse([
 				'message' => 'Could not load files.',
 			], Http::STATUS_INTERNAL_SERVER_ERROR);

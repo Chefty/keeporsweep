@@ -7,6 +7,7 @@ var KeepOrSweep = KeepOrSweep || {};
 		this.filesClient = OC.Files.getClient();
 		this._previewSize = this._calculatePreviewSize();
 		this.scopePath = this._loadStoredScopePath();
+		this._seenFileIds = this._loadSeenFileIds();
 	};
 
 	Manager.prototype = {
@@ -18,6 +19,7 @@ var KeepOrSweep = KeepOrSweep || {};
 		_containerActive: '.active .element-preview',
 		_previewSize: 256,
 		_lastShownFileId: null,
+		_maxSeenHistory: 500,
 
 		_calculatePreviewSize: function() {
 			var shortestViewportSide = Math.min(window.innerWidth || 1024, window.innerHeight || 768);
@@ -41,6 +43,68 @@ var KeepOrSweep = KeepOrSweep || {};
 			}
 		},
 
+		_loadSeenFileIds: function() {
+			try {
+				var raw = window.localStorage.getItem('keeporsweep.seenFileIds');
+				var parsed = raw ? JSON.parse(raw) : [];
+				if (!Array.isArray(parsed)) {
+					return [];
+				}
+				return parsed.filter(function(id) {
+					return typeof id === 'number' || typeof id === 'string';
+				});
+			} catch (e) {
+				return [];
+			}
+		},
+
+		_saveSeenFileIds: function() {
+			try {
+				window.localStorage.setItem('keeporsweep.seenFileIds', JSON.stringify(this._seenFileIds));
+			} catch (e) {
+				// ignore storage errors
+			}
+		},
+
+		_markFileAsSeen: function(file) {
+			if (!file || (file.id === undefined || file.id === null)) {
+				return;
+			}
+
+			var id = file.id;
+			this._seenFileIds = this._seenFileIds.filter(function(seenId) {
+				return seenId !== id;
+			});
+			this._seenFileIds.push(id);
+
+			if (this._seenFileIds.length > this._maxSeenHistory) {
+				this._seenFileIds = this._seenFileIds.slice(this._seenFileIds.length - this._maxSeenHistory);
+			}
+
+			this._saveSeenFileIds();
+		},
+
+		_filterRecentlySeen: function(files) {
+			var self = this;
+			var seen = {};
+			this._seenFileIds.forEach(function(id) {
+				seen[id] = true;
+			});
+
+			var unseen = files.filter(function(file) {
+				return !(file && (file.id in seen));
+			});
+
+			if (unseen.length >= 20) {
+				return unseen;
+			}
+
+			// Recycle history when we ran through most files already.
+			self._seenFileIds = [];
+			self._saveSeenFileIds();
+			return files;
+		},
+
 		load: function() {
 			return this._loadList();
 		},
@@ -60,7 +124,8 @@ var KeepOrSweep = KeepOrSweep || {};
 				$.getJSON(baseUrl + '/files?' + $.param(query))
 				.then(function(result) {
 					var files = Array.isArray(result) ? result : (result.files || []);
-					self._list = _.shuffle(self._dedupeFiles(files));
+					var uniqueFiles = self._dedupeFiles(files);
+					self._list = _.shuffle(self._filterRecentlySeen(uniqueFiles));
 				})
 				.catch(function() {
 					self._list = [];
@@ -126,6 +191,7 @@ var KeepOrSweep = KeepOrSweep || {};
 				}
 
 				this._lastShownFileId = file.id || null;
+				this._markFileAsSeen(file);
 				this._loadPreview(file);
 				return file;
 			}

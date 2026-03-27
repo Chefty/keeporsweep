@@ -19,6 +19,32 @@
 	user-select: none;
 }
 
+.scope-container {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: calc(var(--kos-card-height) * 0.62);
+	z-index: 10;
+	background: var(--color-main-background);
+	padding: 6px 10px;
+	border-radius: var(--border-radius-large);
+	box-shadow: 0 1px 2px var(--color-box-shadow);
+}
+
+.scope-label {
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.scope-input {
+	min-width: 220px;
+	width: min(50vw, 420px);
+}
+
+.scope-apply {
+	min-height: 34px;
+}
+
 .element-container {
 	background-color: var(--color-main-background);
 	filter: drop-shadow(0 1px 2px var(--color-box-shadow));

@@ -35,11 +35,19 @@ class ApiController extends Controller {
 
 		$rawLimit = (int)$this->request->getParam('limit', self::DEFAULT_LIST_LIMIT);
 		$limit = max(1, min($rawLimit, self::MAX_LIST_LIMIT));
+		$scope = trim((string)$this->request->getParam('folder', ''));
 
 		try {
 			$rootFolder = \OC::$server->getRootFolder();
 			$userFolder = $rootFolder->getUserFolder($user->getUID());
-			$files = $this->collectFiles($userFolder, $limit);
+			$targetFolder = $this->resolveScopeFolder($userFolder, $scope);
+			if ($targetFolder === null) {
+				return new DataResponse([
+					'message' => 'Invalid folder scope.',
+				], Http::STATUS_BAD_REQUEST);
+			}
+
+			$files = $this->collectFiles($targetFolder, $limit);
 			$userPath = rtrim($userFolder->getPath(), '/');
 
 			$results = array_map(function (File $file) use ($userPath): array {
@@ -76,6 +84,7 @@ class ApiController extends Controller {
 	private function collectFiles(Folder $folder, int $limit): array {
 		$results = [];
 		$stack = [$folder];
+		$seenIds = [];
 
 		while ($stack !== [] && count($results) < $limit) {
 			/** @var Folder $current */
@@ -92,12 +101,44 @@ class ApiController extends Controller {
 				}
 
 				if ($node instanceof File) {
+					$fileId = $node->getId();
+					if ($fileId > 0 && isset($seenIds[$fileId])) {
+						continue;
+					}
+
+					if ($fileId > 0) {
+						$seenIds[$fileId] = true;
+					}
+
 					$results[] = $node;
 				}
 			}
 		}
 
 		return $results;
+	}
+
+	private function resolveScopeFolder(Folder $userRoot, string $scope): ?Folder {
+		$scope = trim($scope, " \t\n\r\0\x0B/");
+
+		if ($scope === '') {
+			return $userRoot;
+		}
+
+		if (strpos($scope, '..') !== false) {
+			return null;
+		}
+
+		try {
+			$node = $userRoot->get($scope);
+			if ($node instanceof Folder) {
+				return $node;
+			}
+		} catch (\Throwable $exception) {
+			return null;
+		}
+
+		return null;
 	}
 
 	private function getRelativeDirectoryPath(string $absolutePath, string $userBasePath): string {
